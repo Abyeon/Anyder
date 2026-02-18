@@ -67,6 +67,15 @@ public unsafe class Group : IDisposable
 
         Data->SetTransformImpl(t);
         Data->SetColliderActive(Collide);
+        
+        foreach (var ptr in Data->Instances.Instances)
+        {
+            if (ptr.Value == null) continue;
+            var instance = ptr.Value->Instance;
+            var graphics = (BgObjectEx*)instance->GetGraphics();
+            if (graphics == null) continue;
+            graphics->UpdateCulling();
+        }
     }
 
     public void SetAlpha(byte alpha)
