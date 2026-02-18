@@ -15,11 +15,11 @@ public unsafe class Model : IDisposable
 
     public Model(string path, Vector3? position = null, Quaternion? rotation = null, Vector3? scale = null)
     {
-        Anyder.Log.Verbose($"Creating BgObject {path}");
-        if (Anyder.BgObjectFunctions == null) throw new NullReferenceException("BgObject functions are not initialized");
+        AnyderService.Log.Verbose($"Creating BgObject {path}");
+        if (AnyderService.BgObjectFunctions == null) throw new NullReferenceException("BgObject functions are not initialized");
         
         Path = path;
-        BgObject = Anyder.BgObjectFunctions.BgObjectCreate(path);
+        BgObject = AnyderService.BgObjectFunctions.BgObjectCreate(path);
         
         Transform = new Transform()
         {
@@ -57,14 +57,14 @@ public unsafe class Model : IDisposable
 
     public void UpdateRender()
     {
-        Anyder.Log.Verbose($"Updating BgObject {Path}");
+        AnyderService.Log.Verbose($"Updating BgObject {Path}");
         var ex = (BgObjectEx*)BgObject;
         ex->UpdateRender();
     }
 
     public void TryFixCulling()
     {
-        Anyder.Log.Verbose($"Trying to fix BgObject culling {Path}");
+        AnyderService.Log.Verbose($"Trying to fix BgObject culling {Path}");
         if (BgObject == null) return;
         
         if (BgObject->ModelResourceHandle->LoadState == 7)
@@ -78,8 +78,8 @@ public unsafe class Model : IDisposable
     {
         Dirty = false;
         
-        Anyder.Log.Verbose($"Disposing BgObject {Path}");
-        Anyder.Framework.RunOnFrameworkThread(() =>
+        AnyderService.Log.Verbose($"Disposing BgObject {Path}");
+        AnyderService.Framework.RunOnFrameworkThread(() =>
         {
             if (BgObject == null) return;
         

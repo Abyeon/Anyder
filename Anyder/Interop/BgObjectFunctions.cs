@@ -13,7 +13,7 @@ public unsafe class BgObjectFunctions
     
     public BgObjectFunctions()
     {
-        Anyder.GameInteropProvider.InitializeFromAttributes(this);
+        AnyderService.GameInteropProvider.InitializeFromAttributes(this);
     }
     
     public BgObject* BgObjectCreate(string path)

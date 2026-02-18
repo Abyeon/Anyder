@@ -12,8 +12,8 @@ public unsafe class StaticVfx : BaseVfx
 
     public StaticVfx(string path, Vector3 position, Quaternion rotation, Vector3 scale, TimeSpan? expiration = null, bool loop = false)
     {
-        Anyder.Log.Verbose($"Creating StaticVfx {path}");
-        if (Anyder.VfxFunctions == null) throw new NullReferenceException("Vfx functions are not initialized");
+        AnyderService.Log.Verbose($"Creating StaticVfx {path}");
+        if (AnyderService.VfxFunctions == null) throw new NullReferenceException("Vfx functions are not initialized");
 
         Path = path;
         Transform = new Transform()
@@ -30,8 +30,8 @@ public unsafe class StaticVfx : BaseVfx
         
         try
         {
-            Vfx = Anyder.VfxFunctions.StaticVfxCreate(Path);
-            Anyder.VfxFunctions.StaticVfxRun(Vfx);
+            Vfx = AnyderService.VfxFunctions.StaticVfxCreate(Path);
+            AnyderService.VfxFunctions.StaticVfxRun(Vfx);
                 
             if (!IsValid)
                 throw new Exception("Vfx pointer is null");
@@ -40,7 +40,7 @@ public unsafe class StaticVfx : BaseVfx
         }
         catch (Exception e)
         {
-            Anyder.Log.Error(e, "Failed to create Vfx");
+            AnyderService.Log.Error(e, "Failed to create Vfx");
         }
     }
 
@@ -61,8 +61,8 @@ public unsafe class StaticVfx : BaseVfx
         try
         {
             // if (IsValid) Plugin.VfxFunctions.StaticVfxRemove(Vfx);
-            Vfx = Anyder.VfxFunctions.StaticVfxCreate(Path);
-            Anyder.VfxFunctions.StaticVfxRun(Vfx);
+            Vfx = AnyderService.VfxFunctions.StaticVfxCreate(Path);
+            AnyderService.VfxFunctions.StaticVfxRun(Vfx);
                 
             if (!IsValid)
                 throw new Exception("Vfx pointer is null");
@@ -71,12 +71,12 @@ public unsafe class StaticVfx : BaseVfx
         }
         catch (Exception e)
         {
-            Anyder.Log.Error(e, "Failed to create Vfx");
+            AnyderService.Log.Error(e, "Failed to create Vfx");
         }
     }
 
     protected override void Remove()
     {
-        Anyder.VfxFunctions.StaticVfxRemove(Vfx);
+        AnyderService.VfxFunctions.StaticVfxRemove(Vfx);
     }
 }

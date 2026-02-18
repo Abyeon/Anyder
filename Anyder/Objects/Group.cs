@@ -24,9 +24,9 @@ public unsafe class Group : IDisposable
     public Group(string path, Vector3? position = null, Quaternion? rotation = null, Vector3? scale = null, bool collide = true)
     {
         Data = IMemorySpace.GetDefaultSpace()->Malloc<SharedGroupLayoutInstance>();
-        Anyder.SharedGroupLayoutFunctions.Ctor(Data);
+        AnyderService.SharedGroupLayoutFunctions.Ctor(Data);
         
-        Anyder.Log.Verbose($"Attempting to create group {path} @ {((IntPtr)Data):x8}");
+        AnyderService.Log.Verbose($"Attempting to create group {path} @ {((IntPtr)Data):x8}");
         Path = path;
 
         Transform = new Transform()
@@ -40,12 +40,12 @@ public unsafe class Group : IDisposable
         
         Collide = collide;
         
-        Anyder.Framework.RunOnTick(SetModel);
+        AnyderService.Framework.RunOnTick(SetModel);
     }
 
     private void SetModel()
     {
-        Anyder.SharedGroupLayoutFunctions.LoadSgb(Data, Path);
+        AnyderService.SharedGroupLayoutFunctions.LoadSgb(Data, Path);
         
         UpdateTransform();
 
@@ -54,7 +54,7 @@ public unsafe class Group : IDisposable
         
         if (first != last)
         {
-            Anyder.SharedGroupLayoutFunctions.FixGroupChildren(Data);
+            AnyderService.SharedGroupLayoutFunctions.FixGroupChildren(Data);
         }
     }
 
@@ -102,7 +102,7 @@ public unsafe class Group : IDisposable
     
     public void Dispose()
     {
-        Anyder.Log.Verbose($"Disposing group {Path}");
+        AnyderService.Log.Verbose($"Disposing group {Path}");
         if (Data == null) return;
         
         Data->Deinit();

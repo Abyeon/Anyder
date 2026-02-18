@@ -13,8 +13,8 @@ public unsafe class ActorVfx : BaseVfx
     
     public ActorVfx(string path, IGameObject target, IGameObject source, TimeSpan? expiration = null, bool loop = false)
     {
-        Anyder.Log.Verbose($"Creating ActorVfx {path}");
-        if (Anyder.VfxFunctions == null) throw new NullReferenceException("Vfx functions are not initialized");
+        AnyderService.Log.Verbose($"Creating ActorVfx {path}");
+        if (AnyderService.VfxFunctions == null) throw new NullReferenceException("Vfx functions are not initialized");
         
         Path = path;
         Target = target;
@@ -24,22 +24,22 @@ public unsafe class ActorVfx : BaseVfx
 
         try
         {
-            Vfx = Anyder.VfxFunctions.ActorVfxCreate(Path, Source.Address, Target.Address);
+            Vfx = AnyderService.VfxFunctions.ActorVfxCreate(Path, Source.Address, Target.Address);
         }
         catch (Exception e)
         {
-            Anyder.Log.Error(e, "Failed to create Vfx");
+            AnyderService.Log.Error(e, "Failed to create Vfx");
         }
     }
 
     public override void Refresh()
     {
         // if (IsValid) Plugin.VfxFunctions.ActorVfxRemove(Vfx);
-        Vfx = Anyder.VfxFunctions.ActorVfxCreate(Path, Source.Address, Target.Address);
+        Vfx = AnyderService.VfxFunctions.ActorVfxCreate(Path, Source.Address, Target.Address);
     }
 
     protected override void Remove()
     {
-        Anyder.VfxFunctions.ActorVfxRemove(Vfx);
+        AnyderService.VfxFunctions.ActorVfxRemove(Vfx);
     }
 }

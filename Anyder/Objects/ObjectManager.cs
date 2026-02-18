@@ -18,27 +18,24 @@ public class ObjectManager : IDisposable
     public List<Group> Groups = [];
     public List<BaseVfx> Vfx = [];
     
-    private readonly IClientState _clientState;
-    private readonly IFramework _framework;
-    private readonly Anyder _service;
+    private readonly IClientState clientState;
+    private readonly IFramework framework;
 
-    public ObjectManager(Anyder service)
+    public ObjectManager()
     {
-        _service = service;
+        clientState = AnyderService.ClientState;
+        clientState.ZoneInit += ClientStateOnZoneInit;
+        clientState.Logout += ClientStateOnLogout;
         
-        _clientState = Anyder.ClientState;
-        _clientState.ZoneInit += ClientStateOnZoneInit;
-        _clientState.Logout += ClientStateOnLogout;
-        
-        _framework = Anyder.Framework;
-        _framework.Update += FrameworkOnUpdate;
+        framework = AnyderService.Framework;
+        framework.Update += FrameworkOnUpdate;
     }
     
-    private readonly List<Model> _dirtyModels = [];
+    private readonly List<Model> dirtyModels = [];
 
     private void FrameworkOnUpdate(IFramework framework)
     {
-        foreach (var model in _dirtyModels.ToList())
+        foreach (var model in dirtyModels.ToList())
         {
             if (model.Dirty)
             {
@@ -46,7 +43,7 @@ public class ObjectManager : IDisposable
             }
             else
             {
-                _dirtyModels.Remove(model);
+                dirtyModels.Remove(model);
             }
         }
         
@@ -94,7 +91,7 @@ public class ObjectManager : IDisposable
                 Add(new Group(path, pos, rot, sca, collide));
                 break;
             default:
-                Anyder.Log.Error($"Unsupported extension {ext}");
+                AnyderService.Log.Error($"Unsupported extension {ext}");
                 break;
         }
     }
@@ -102,7 +99,7 @@ public class ObjectManager : IDisposable
     public void Add(Model model)
     {
         Models.Add(model);
-        _dirtyModels.Add(model);
+        dirtyModels.Add(model);
     }
     
     public void Add(Group group)
@@ -122,7 +119,7 @@ public class ObjectManager : IDisposable
     {
         foreach (var model in Models) model.Dispose();
         Models.Clear();
-        _dirtyModels.Clear();
+        dirtyModels.Clear();
     }
 
     /// <summary>

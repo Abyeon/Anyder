@@ -37,21 +37,21 @@ public unsafe class VfxFunctions : IDisposable
 
     public VfxFunctions()
     {
-        Anyder.GameInteropProvider.InitializeFromAttributes(this);
+        AnyderService.GameInteropProvider.InitializeFromAttributes(this);
         
         // Applying sigs in ctor is convenient for making the hooks, apparently. (I'm starting to understand why VfxEdit does things the way they do :P)
         string actorVfxRemoveSig = "0F 11 48 10 48 8D 05";
-        var actorVfxRemoveAddressTemp = Anyder.SigScanner.ScanText(actorVfxRemoveSig) + 7;
+        var actorVfxRemoveAddressTemp = AnyderService.SigScanner.ScanText(actorVfxRemoveSig) + 7;
         var actorVfxRemoveAddress = Marshal.ReadIntPtr(actorVfxRemoveAddressTemp + Marshal.ReadInt32(actorVfxRemoveAddressTemp) + 4);
         ActorVfxRemoveInternal = Marshal.GetDelegateForFunctionPointer<ActorVfxRemoveDelegate>(actorVfxRemoveAddress);
 
         string staticVfxRemoveSig = "40 53 48 83 EC 20 48 8B D9 48 8B 89 ?? ?? ?? ?? 48 85 C9 74 28 33 D2 E8 ?? ?? ?? ?? 48 8B 8B ?? ?? ?? ?? 48 85 C9";
-        var staticVfxRemoveAddress = Anyder.SigScanner.ScanText(staticVfxRemoveSig);
+        var staticVfxRemoveAddress = AnyderService.SigScanner.ScanText(staticVfxRemoveSig);
         StaticVfxRemoveInternal = Marshal.GetDelegateForFunctionPointer<StaticVfxRemoveDelegate>(staticVfxRemoveAddress);
         
         // Create hooks
-        StaticVfxRemoveHook = Anyder.GameInteropProvider.HookFromAddress<StaticVfxRemoveDelegate>(staticVfxRemoveAddress, StaticVfxRemoveDetour);
-        ActorVfxRemoveHook = Anyder.GameInteropProvider.HookFromAddress<ActorVfxRemoveDelegate>(actorVfxRemoveAddress, ActorVfxRemoveDetour);
+        StaticVfxRemoveHook = AnyderService.GameInteropProvider.HookFromAddress<StaticVfxRemoveDelegate>(staticVfxRemoveAddress, StaticVfxRemoveDetour);
+        ActorVfxRemoveHook = AnyderService.GameInteropProvider.HookFromAddress<ActorVfxRemoveDelegate>(actorVfxRemoveAddress, ActorVfxRemoveDetour);
         
         StaticVfxRemoveHook.Enable();
         ActorVfxRemoveHook.Enable();
@@ -59,13 +59,13 @@ public unsafe class VfxFunctions : IDisposable
 
     private VfxStruct* StaticVfxRemoveDetour(IntPtr vfx)
     {
-        Anyder.ObjectManager.InteropRemoved(vfx);
+        AnyderService.ObjectManager.InteropRemoved(vfx);
         return StaticVfxRemoveHook.Original(vfx);
     }
 
     private VfxStruct* ActorVfxRemoveDetour(IntPtr vfx, char a2)
     {
-        Anyder.ObjectManager.InteropRemoved(vfx);
+        AnyderService.ObjectManager.InteropRemoved(vfx);
         return ActorVfxRemoveHook.Original(vfx, a2);
     }
 

@@ -4,12 +4,8 @@
         <Version>0.0.0.1</Version>
         <PackageProjectUrl>https://github.com/Abyeon/Anyder</PackageProjectUrl>
         <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
-        <IsPackable>false</IsPackable>
+        <Use_DalamudPackager>false</Use_DalamudPackager>
     </PropertyGroup>
-
-    <ItemGroup>
-      <PackageReference Include="DalamudPackager" Version="14.0.2" />
-    </ItemGroup>
 
     <ItemGroup>
       <Content Include=".gitignore" />

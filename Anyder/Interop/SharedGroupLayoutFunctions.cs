@@ -33,7 +33,7 @@ public unsafe class SharedGroupLayoutFunctions
     
     public SharedGroupLayoutFunctions()
     {
-        Anyder.GameInteropProvider.InitializeFromAttributes(this);
+        AnyderService.GameInteropProvider.InitializeFromAttributes(this);
     }
 
     public SharedGroupLayoutInstance* Ctor(SharedGroupLayoutInstance* self)

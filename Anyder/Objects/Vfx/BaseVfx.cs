@@ -19,7 +19,7 @@ public abstract unsafe class BaseVfx : IDisposable
     {
         if (DateTime.Now >= Expires && Loop)
         {
-            Anyder.Log.Verbose($"Refreshing Vfx {Path}");
+            AnyderService.Log.Verbose($"Refreshing Vfx {Path}");
             if (IsValid) Remove();
             Refresh();
         }
@@ -27,17 +27,17 @@ public abstract unsafe class BaseVfx : IDisposable
     
     public void Dispose()
     {
-        Anyder.Log.Verbose($"Disposing Vfx {Path}");
+        AnyderService.Log.Verbose($"Disposing Vfx {Path}");
         
         try
         {
-            if (Anyder.VfxFunctions == null) throw new NullReferenceException("Vfx functions are not initialized");
+            if (AnyderService.VfxFunctions == null) throw new NullReferenceException("Vfx functions are not initialized");
             if (IsValid) Remove();
             Vfx = null;
         }
         catch (Exception e)
         {
-            Anyder.Log.Error(e, $"Error while trying to dispose {Path}");
+            AnyderService.Log.Error(e, $"Error while trying to dispose {Path}");
         }
         
         GC.SuppressFinalize(this);
