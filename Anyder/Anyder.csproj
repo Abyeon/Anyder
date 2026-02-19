@@ -5,5 +5,7 @@
         <PackageProjectUrl>https://github.com/Abyeon/Anyder</PackageProjectUrl>
         <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
         <Use_DalamudPackager>false</Use_DalamudPackager>
+        <Configurations>Release;Debug</Configurations>
+        <Platforms>AnyCPU</Platforms>
     </PropertyGroup>
 </Project>
