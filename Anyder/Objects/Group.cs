@@ -1,11 +1,16 @@
 ﻿using System;
+using System.Linq;
 using System.Numerics;
+using System.Text;
 using Anyder.Interop;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility.Raii;
+using FFXIVClientStructs.FFXIV.Client.Graphics;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.LayoutEngine;
 using FFXIVClientStructs.FFXIV.Client.LayoutEngine.Group;
 using FFXIVClientStructs.FFXIV.Client.System.Memory;
+using InteropGenerator.Runtime;
 
 namespace Anyder.Objects;
 
@@ -17,6 +22,7 @@ public unsafe class Group : IDisposable
     public Transform Transform;
     public bool Collide;
     public byte Alpha = 0;
+    public Vector3 Stain = Vector3.Zero;
     
     public bool IsHovered = false;
     public byte HighlightColor = 70;
@@ -24,8 +30,9 @@ public unsafe class Group : IDisposable
     public Group(string path, Vector3? position = null, Quaternion? rotation = null, Vector3? scale = null, bool collide = true)
     {
         Data = IMemorySpace.GetDefaultSpace()->Malloc<SharedGroupLayoutInstance>();
-        AnyderService.SharedGroupLayoutFunctions.Ctor(Data);
+        Path = path;
         
+        AnyderService.SharedGroupLayoutFunctions.Ctor(Data);
         AnyderService.Log.Verbose($"Attempting to create group {path} @ {((IntPtr)Data):x8}");
         Path = path;
 
@@ -45,6 +52,25 @@ public unsafe class Group : IDisposable
 
     private void SetModel()
     {
+        // var layers = LayoutWorld.Instance()->ActiveLayout->Layers;
+        // if (layers.Count == 0) return;
+        // var manager = layers.First().Value.Value;
+        //
+        // var first = (IntPtr)Data->Instances.Instances.First;
+        // var last = (IntPtr)Data->Instances.Instances.Last;
+        //
+        // if (first != last)
+        // {
+        //     AnyderService.SharedGroupLayoutFunctions.FixGroupChildren(Data);
+        // }
+        //
+        // var bytes = Encoding.UTF8.GetBytes(Path + "\0");
+        // fixed (byte* ptr = bytes)
+        // {
+        //     Data->Init(manager, ptr);
+        // }
+        //
+        // AnyderService.SharedGroupLayoutFunctions.AssignResource(Data, Path);
         AnyderService.SharedGroupLayoutFunctions.LoadSgb(Data, Path);
         
         UpdateTransform();
@@ -89,6 +115,33 @@ public unsafe class Group : IDisposable
             if (graphics == null) continue;
             graphics->Alpha = alpha;
         }
+    }
+
+    public void ApplyStain(Vector3 color)
+    {
+        Stain = color;
+        
+        byte r = (byte)(color.X * 255);
+        byte g = (byte)(color.Y * 255);
+        byte b = (byte)(color.Z * 255);
+
+        var byteColor = new ByteColor
+        {
+            A = 255, R = r, G = g, B = b
+        };
+        
+        Data->ApplyStain(&byteColor);
+    }
+
+    public byte TryGetStain()
+    {
+        var stain = Data->StainInfo;
+        return stain == null ? (byte)0 : stain->DefaultStainIndex;
+    }
+
+    public SharedGroupStainInfo* GetStainInfo()
+    {
+        return Data->StainInfo;
     }
 
     public void SetHighlight(byte color)

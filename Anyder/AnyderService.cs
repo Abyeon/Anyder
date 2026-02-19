@@ -1,9 +1,11 @@
 ﻿using System;
+using System.IO;
 using Anyder.Interop;
 using Anyder.Objects;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
+using InteropGenerator.Runtime;
 
 namespace Anyder;
 
@@ -24,6 +26,16 @@ public class AnyderService
 
     public static void Init(IDalamudPluginInterface pluginInterface)
     {
+        var sigScanner = (ISigScanner)pluginInterface.GetService(typeof(ISigScanner))!;
+        var dataManager = (IDataManager)pluginInterface.GetService(typeof(IDataManager))!;
+        
+        FFXIVClientStructs.Interop.Generated.Addresses.Register();
+        Resolver.GetInstance.Setup(sigScanner.SearchBase,
+                                   dataManager.GameData.Repositories["ffxiv"].Version,
+                                   new FileInfo(Path.Join(pluginInterface.ConfigDirectory.FullName, "SigCache.json")));
+        
+        Resolver.GetInstance.Resolve();
+        
         PluginInterface = pluginInterface;
         PluginInterface.Create<AnyderService>();
 
