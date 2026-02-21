@@ -75,6 +75,12 @@ public unsafe class Group : IDisposable
         }
     }
 
+    public void SetCollision(bool enabled)
+    {
+        Collide = enabled;
+        Data->SetColliderActive(Collide);
+    }
+
     public void SetAlpha(byte alpha)
     {
         foreach (var ptr in Data->Instances.Instances)
