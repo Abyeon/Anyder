@@ -3,6 +3,7 @@ using System.Numerics;
 using Anyder.Interop;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility.Raii;
+using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.LayoutEngine;
 using FFXIVClientStructs.FFXIV.Client.LayoutEngine.Group;
 using FFXIVClientStructs.FFXIV.Client.System.Memory;
@@ -16,10 +17,6 @@ public unsafe class Group : IDisposable
     
     public Transform Transform;
     public bool Collide;
-    public byte Alpha = 0;
-    
-    public bool IsHovered = false;
-    public byte HighlightColor = 70;
 
     public Group(string path, Vector3? position = null, Quaternion? rotation = null, Vector3? scale = null, bool collide = true)
     {
@@ -80,7 +77,6 @@ public unsafe class Group : IDisposable
 
     public void SetAlpha(byte alpha)
     {
-        Alpha = alpha;
         foreach (var ptr in Data->Instances.Instances)
         {
             if (ptr.Value == null) continue;
@@ -91,7 +87,7 @@ public unsafe class Group : IDisposable
         }
     }
 
-    public void SetHighlight(byte color)
+    public void SetHighlightColor(byte color)
     {
         foreach (var ptr in Data->Instances.Instances)
         {

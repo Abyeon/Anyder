@@ -2,6 +2,7 @@
 using System.Numerics;
 using Anyder.Objects.Vfx;
 using Dalamud.Game.ClientState.Objects.Types;
+using FFXIVClientStructs.FFXIV.Client.Game.Object;
 
 namespace Anyder.Objects;
 
@@ -25,6 +26,7 @@ public class SpawnedObject : IDisposable
     public BaseVfx? Vfx { get; private set; }
     
     public bool IsValid => Type != ObjectType.Invalid;
+    public bool IsHighlighted { get; private set; } = false;
 
     public SpawnedObject(string path, Vector3? position = null, Quaternion? rotation = null, Vector3? scale = null, bool collide = false)
     {
@@ -86,6 +88,42 @@ public class SpawnedObject : IDisposable
             default:
                 Type = ObjectType.Invalid;
                 AnyderService.Log.Error($"Unsupported extension {ext}");
+                break;
+        }
+    }
+
+    public void Highlight(byte color)
+    {
+        switch (Type)
+        {
+            case ObjectType.Model:
+                Model?.SetHighlightColor(color);
+                IsHighlighted = true;
+                break;
+            case ObjectType.SharedGroup:
+                Group?.SetHighlightColor(color);
+                IsHighlighted = true;
+                break;
+            default:
+                AnyderService.Log.Error($"Cannot set highlight color of {Type}");
+                break;
+        }
+    }
+
+    public void RemoveHighlight()
+    {
+        switch (Type)
+        {
+            case ObjectType.Model:
+                Model?.SetHighlightColor(0);
+                IsHighlighted = false;
+                break;
+            case ObjectType.SharedGroup:
+                Group?.SetHighlightColor(0);
+                IsHighlighted = false;
+                break;
+            default:
+                AnyderService.Log.Error($"Cannot set highlight color of {Type}");
                 break;
         }
     }

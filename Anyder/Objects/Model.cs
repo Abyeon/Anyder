@@ -1,6 +1,7 @@
 ﻿using System;
 using Anyder.Interop;
 using Dalamud.Bindings.ImGui;
+using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Common.Math;
 
@@ -43,6 +44,13 @@ public unsafe class Model : IDisposable
     {
         var ex = (BgObjectEx*)BgObject;
         ex->Alpha = alpha;
+        UpdateRender();
+    }
+
+    public void SetHighlightColor(byte color)
+    {
+        var ex = (BgObjectEx*)BgObject;
+        ex->HighlightFlags = color;
         UpdateRender();
     }
 
