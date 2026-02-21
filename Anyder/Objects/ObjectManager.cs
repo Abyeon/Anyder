@@ -5,6 +5,7 @@ using System.Linq;
 using System.Numerics;
 using Anyder.Objects.Vfx;
 using Dalamud.Game.ClientState;
+using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin.Services;
 
 namespace Anyder.Objects;
@@ -14,9 +15,7 @@ namespace Anyder.Objects;
 /// </summary>
 public class ObjectManager : IDisposable
 {
-    public List<Model> Models = [];
-    public List<Group> Groups = [];
-    public List<BaseVfx> Vfx = [];
+    public List<SpawnedObject> Objects = [];
     
     private readonly IClientState clientState;
     private readonly IFramework framework;
@@ -30,32 +29,33 @@ public class ObjectManager : IDisposable
         framework = AnyderService.Framework;
         framework.Update += FrameworkOnUpdate;
     }
-    
-    private readonly List<Model> dirtyModels = [];
 
-    private void FrameworkOnUpdate(IFramework framework)
+    private void FrameworkOnUpdate(IFramework arg)
     {
-        foreach (var model in dirtyModels.ToList())
+        for (var i = Objects.Count - 1; i >= 0; i--)
         {
-            if (model.Dirty)
+            var obj = Objects[i];
+
+            switch (obj)
             {
-                model.TryFixCulling();
-            }
-            else
-            {
-                dirtyModels.Remove(model);
-            }
-        }
-        
-        foreach (var item in Vfx.ToList())
-        {
-            if (!item.Loop && DateTime.UtcNow >= item.Expires)
-            {
-                item.Dispose(); // triggers the detour, removing it from the list
-            }
-            else
-            {
-                item.CheckForRefresh();
+                case { Type: ObjectType.Model, Model.Dirty: true }:
+                    obj.Model.TryFixCulling();
+                    break;
+                case { Type: ObjectType.StaticVfx or ObjectType.ActorVfx, Vfx: not null }:
+                {
+                    var item = obj.Vfx;
+                    if (!item.Loop && DateTime.UtcNow >= item.Expires)
+                    {
+                        obj.Dispose(); 
+                        Objects.RemoveAt(i);
+                    }
+                    else
+                    {
+                        item.CheckForRefresh();
+                    }
+
+                    break;
+                }
             }
         }
     }
@@ -64,115 +64,75 @@ public class ObjectManager : IDisposable
     private void ClientStateOnZoneInit(ZoneInitEventArgs obj) => Clear();
 
     /// <summary>
-    /// Takes a path and determines what type of object to spawn.
+    /// Takes a path and determines what type of object to spawn, returning the wrapped object.
     /// </summary>
-    /// <param name="path">Game path to the file</param>
-    /// <param name="position">Object position</param>
-    /// <param name="rotation">Object rotation</param>
-    /// <param name="scale">Object scale</param>
-    /// <param name="collide">Object collision toggle</param>
-    public void Add(string path, Vector3? position = null, Quaternion? rotation = null, Vector3? scale = null, bool collide = false)
+    public SpawnedObject Add(string path, Vector3? position = null, Quaternion? rotation = null, Vector3? scale = null, bool collide = false)
     {
-        string ext = Path.GetExtension(path);
+        var newObj = new SpawnedObject(path, position, rotation, scale, collide);
+        if (!newObj.IsValid) throw new ArgumentException("Object is not valid!");
         
-        var pos = position ?? Vector3.Zero;
-        var rot  = rotation ?? Quaternion.Identity;
-        var sca  = scale ?? Vector3.One;
-
-        switch (ext)
-        {
-            case ".avfx":
-                Add(new StaticVfx(path,  pos, sca, 0f, loop: true));
-                break;
-            case ".mdl":
-                Add(new Model(path, pos, rot, sca));
-                break;
-            case ".sgb":
-                Add(new Group(path, pos, rot, sca, collide));
-                break;
-            default:
-                AnyderService.Log.Error($"Unsupported extension {ext}");
-                break;
-        }
-    }
-    
-    public void Add(Model model)
-    {
-        Models.Add(model);
-        dirtyModels.Add(model);
-    }
-    
-    public void Add(Group group)
-    {
-        Groups.Add(group);
-    }
-    
-    public void Add(BaseVfx vfx)
-    {
-        Vfx.Add(vfx);
+        Objects.Add(newObj);
+        return newObj;
     }
 
     /// <summary>
-    /// Clears tracked BgObjects.
+    /// Takes a path and determines what type of object to spawn, returning the wrapped object.
     /// </summary>
-    public void ClearModels()
+    public SpawnedObject Add(string path, IGameObject target, bool collide = false, int seconds = 5, bool loop = false)
     {
-        foreach (var model in Models) model.Dispose();
-        Models.Clear();
-        dirtyModels.Clear();
+        var newObj = new SpawnedObject(path, target, collide, seconds, loop);
+        if (!newObj.IsValid) throw new ArgumentException("Object is not valid!");
+        
+        Objects.Add(newObj);
+        return newObj;
     }
-
-    /// <summary>
-    /// Clears tracked SharedGroupLayouts.
-    /// </summary>
-    public void ClearGroups()
-    {
-        foreach (var group in Groups) group.Dispose();
-        Groups.Clear();
-    }
-
-    /// <summary>
-    /// Clears tracked Vfx objects.
-    /// </summary>
-    public void ClearVfx()
-    {
-        foreach (var vfx in Vfx.ToList())
-        {
-            vfx.Loop = false; // need to disable loop so vfx doesnt get re-enabled after disposing.. oops!
-            vfx.Dispose();
-        }
-        Vfx.Clear();
-    }
+    
+    public void Add(Model model) => Objects.Add(new SpawnedObject(model));
+    public void Add(Group group) => Objects.Add(new SpawnedObject(group));
+    public void Add(BaseVfx vfx) => Objects.Add(new SpawnedObject(vfx));
 
     /// <summary>
     /// Clears all currently tracked objects.
     /// </summary>
     public void Clear()
     {
-        ClearModels();
-        ClearGroups();
-        ClearVfx();
+        foreach (var obj in Objects)
+        {
+            if (obj.Type is ObjectType.StaticVfx or ObjectType.ActorVfx && obj.Vfx != null)
+            {
+                obj.Vfx.Loop = false; // Disable loop so it doesn't get re-enabled after disposing
+            }
+            obj.Dispose();
+        }
+        Objects.Clear();
     }
 
     internal unsafe void InteropRemoved(IntPtr pointer)
     {
-        foreach (var item in Vfx)
+        for (var i = 0; i < Objects.Count; i++)
         {
-            if ((IntPtr)item.Vfx == pointer)
+            var obj = Objects[i];
+            if (obj is not { Type: ObjectType.StaticVfx or ObjectType.ActorVfx, Vfx: not null }) continue;
+            if ((IntPtr)obj.Vfx.Vfx != pointer) continue;
+            
+            if (obj.Vfx.Loop)
             {
-                if (item.Loop)
-                {
-                    item.Refresh();
-                }
-                else
-                {
-                    Vfx.Remove(item);
-                }
-
-                break;
+                obj.Vfx.Refresh();
             }
+            else
+            {
+                Objects.RemoveAt(i);
+            }
+            break;
         }
     }
 
-    public void Dispose() => Clear();
+    public void Dispose() 
+    {
+        framework.Update -= FrameworkOnUpdate;
+        clientState.ZoneInit -= ClientStateOnZoneInit;
+        clientState.Logout -= ClientStateOnLogout;
+        
+        Clear();
+    }
 }
