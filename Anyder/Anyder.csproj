@@ -7,5 +7,7 @@
         <Use_DalamudPackager>false</Use_DalamudPackager>
         <Configurations>Release;Debug</Configurations>
         <Platforms>AnyCPU</Platforms>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <Description>A FFXIV plugin library for spawning in models, vfx, and lights.</Description>
     </PropertyGroup>
 </Project>
