@@ -4,6 +4,8 @@ using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.LayoutEngine;
 using FFXIVClientStructs.FFXIV.Client.LayoutEngine.Group;
 using FFXIVClientStructs.FFXIV.Client.LayoutEngine.Layer;
+using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
+using FFXIVClientStructs.Interop;
 
 namespace Anyder.Interop;
 
@@ -14,6 +16,8 @@ public unsafe class SharedGroupLayoutFunctions
     internal delegate SharedGroupLayoutInstance* CtorDelegate(SharedGroupLayoutInstance* self);
     internal delegate byte LoadSgbDelegate(SharedGroupLayoutInstance* self, byte* pathBytes);
     internal delegate LayerManager* GetPreferredLayerManagerDelegate(LayoutManager* layoutManager);
+    internal delegate IntPtr LayerIDGenDelegate(Pointer<ResourceHandle>* layerGroupResourceHandle);  // see ffxiv_dx11.exe+7110E0
+    internal delegate LayerManager* LayerCtorDelegate(LayerManager* self, LayoutManager* owner);
     
     [Signature("48 89 5C 24 ?? 48 89 74 24 ?? 57 48 83 EC ?? 33 F6 C7 41 ?? ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? 48 89 71 ?? ?? ?? ?? 48 8B F9 48 89 71 ?? 89 71 ?? 48 89 71 ?? C7 41 ?? ?? ?? ?? ?? 48 83 C1 ?? E8 ?? ?? ?? ?? 48 89 77")]
     internal CtorDelegate? CtorInternal = null;
@@ -29,6 +33,12 @@ public unsafe class SharedGroupLayoutFunctions
     
     [Signature("40 55 57 41 55 48 8D 6C 24 ?? 48 81 EC ?? ?? ?? ?? 48 8B F9")]
     internal FixGroupChildrenDelegate? FixGroupChildrenInternal = null;
+    
+    [Signature("40 53 48 83 EC ?? 48 8B D9 48 89 51 ?? C7 41 ?? ?? ?? ?? ?? 48 8D 05")]
+    internal LayerCtorDelegate? LayerCtorInternal = null;
+    
+    [Signature("48 83 EC ?? ?? ?? ?? FF 90 ?? ?? ?? ?? 45 33 C0 48 89 5C 24")]
+    internal LayerIDGenDelegate? LayerIdGenInternal = null;
     
     
     public SharedGroupLayoutFunctions()
@@ -82,5 +92,13 @@ public unsafe class SharedGroupLayoutFunctions
             throw new InvalidOperationException("GetPreferredLayerManager sig was not found!");
         
         return GetPreferredLayerManagerInternal(self);
+    }
+    
+    public LayerManager* LayerCtor(LayerManager* self, LayoutManager* owner)
+    {
+        if (LayerCtorInternal == null)
+            throw new InvalidOperationException("LayerCtorInternal sig was not found!");
+        
+        return LayerCtorInternal(self , owner);
     }
 }

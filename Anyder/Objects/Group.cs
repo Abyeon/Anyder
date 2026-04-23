@@ -3,9 +3,12 @@ using System.Numerics;
 using Anyder.Interop;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Interface.Utility.Raii;
+using Dalamud.Utility.Numerics;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
+using FFXIVClientStructs.FFXIV.Client.Graphics;
 using FFXIVClientStructs.FFXIV.Client.LayoutEngine;
 using FFXIVClientStructs.FFXIV.Client.LayoutEngine.Group;
+using FFXIVClientStructs.FFXIV.Client.LayoutEngine.Layer;
 using FFXIVClientStructs.FFXIV.Client.System.Memory;
 
 namespace Anyder.Objects;
@@ -18,6 +21,17 @@ public unsafe class Group : IDisposable
     public Transform Transform;
     public bool Collide;
 
+    public Vector4 Color
+    {
+        get;
+        set
+        {
+            field = value;
+            var color = value.ToByteColor();
+            Data->ApplyStain(&color);
+        }
+    }
+
     public Group(string path, Vector3? position = null, Quaternion? rotation = null, Vector3? scale = null, bool collide = true)
     {
         Data = IMemorySpace.GetDefaultSpace()->Malloc<SharedGroupLayoutInstance>();
@@ -25,6 +39,25 @@ public unsafe class Group : IDisposable
         
         AnyderService.Log.Verbose($"Attempting to create group {path} @ {((IntPtr)Data):x8}");
         Path = path;
+        Data->Layout = LayoutWorld.Instance()->ActiveLayout;
+ 
+
+        if (!LayoutWorld.Instance()->ActiveLayout->Layers.ContainsKey(6969))
+        {
+            var layer = IMemorySpace.GetDefaultSpace()->Malloc<LayerManager>();
+
+            if (AnyderService.SharedGroupLayoutFunctions.LayerCtorInternal != null)
+            {
+                var manager = AnyderService.SharedGroupLayoutFunctions.LayerCtorInternal.Invoke(layer, LayoutWorld.Instance()->ActiveLayout);
+                layer->Id = 6969;
+                layer->Initialize();
+                Data->Layer = manager;
+            }
+        }
+        else
+        {
+            Data->Layer = LayoutWorld.Instance()->ActiveLayout->Layers[6969];
+        }
 
         Transform = new Transform()
         {
@@ -36,6 +69,7 @@ public unsafe class Group : IDisposable
         Transform.OnUpdate += UpdateTransform;
         
         Collide = collide;
+        Color = Vector4.Zero;
         
         AnyderService.Framework.RunOnTick(SetModel);
     }
