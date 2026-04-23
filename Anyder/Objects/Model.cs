@@ -1,9 +1,10 @@
 ﻿using System;
+using System.Numerics;
 using Anyder.Interop;
 using Dalamud.Bindings.ImGui;
+using Dalamud.Utility.Numerics;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
-using FFXIVClientStructs.FFXIV.Common.Math;
 
 namespace Anyder.Objects;
 
@@ -13,6 +14,17 @@ public unsafe class Model : IDisposable
     public string Path;
     public Transform Transform;
     public bool Dirty = true;
+    
+    public Vector4 Color
+    {
+        get;
+        set
+        {
+            field = value;
+            var color = value.ToByteColor();
+            BgObject->TrySetStainColor(color);
+        }
+    }
 
     public Model(string path, Vector3? position = null, Quaternion? rotation = null, Vector3? scale = null)
     {

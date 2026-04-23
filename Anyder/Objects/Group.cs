@@ -1,11 +1,7 @@
 ﻿using System;
 using System.Numerics;
 using Anyder.Interop;
-using Dalamud.Bindings.ImGui;
-using Dalamud.Interface.Utility.Raii;
 using Dalamud.Utility.Numerics;
-using FFXIVClientStructs.FFXIV.Client.Game.Object;
-using FFXIVClientStructs.FFXIV.Client.Graphics;
 using FFXIVClientStructs.FFXIV.Client.LayoutEngine;
 using FFXIVClientStructs.FFXIV.Client.LayoutEngine.Group;
 using FFXIVClientStructs.FFXIV.Client.LayoutEngine.Layer;
@@ -32,7 +28,7 @@ public unsafe class Group : IDisposable
         }
     }
 
-    public Group(string path, Vector3? position = null, Quaternion? rotation = null, Vector3? scale = null, bool collide = true)
+    public Group(string path, Vector3? position = null, Quaternion? rotation = null, Vector3? scale = null, bool collide = true, Vector4? color = null)
     {
         Data = IMemorySpace.GetDefaultSpace()->Malloc<SharedGroupLayoutInstance>();
         AnyderService.SharedGroupLayoutFunctions.Ctor(Data);
@@ -69,7 +65,7 @@ public unsafe class Group : IDisposable
         Transform.OnUpdate += UpdateTransform;
         
         Collide = collide;
-        Color = Vector4.Zero;
+        Color = color == null ? Vector4.Zero : (Vector4)color;
         
         AnyderService.Framework.RunOnTick(SetModel);
     }
