@@ -66,9 +66,9 @@ public class ObjectManager : IDisposable
     /// <summary>
     /// Takes a path and determines what type of object to spawn, returning the wrapped object.
     /// </summary>
-    public SpawnedObject Add(string path, Vector3? position = null, Quaternion? rotation = null, Vector3? scale = null, bool collide = false)
+    public SpawnedObject Add(string path, Vector3? position = null, Quaternion? rotation = null, Vector3? scale = null, bool collide = false, Vector4? color = null)
     {
-        var newObj = new SpawnedObject(path, position, rotation, scale, collide);
+        var newObj = new SpawnedObject(path, position, rotation, scale, collide, color);
         if (!newObj.IsValid) throw new ArgumentException("Object is not valid!");
         
         Objects.Add(newObj);

@@ -13,6 +13,7 @@ public unsafe class SharedGroupLayoutFunctions
 {
     internal delegate void FixGroupChildrenDelegate(SharedGroupLayoutInstance* self);
     internal delegate void AssignResourceHandlerDelegate(SharedGroupLayoutInstance* self, byte* pathBytes);
+    internal delegate bool* CreateSgbDelegate(SharedGroupLayoutInstance* self, LayoutManager* creator, byte* pathBytes, byte a4);
     internal delegate SharedGroupLayoutInstance* CtorDelegate(SharedGroupLayoutInstance* self);
     internal delegate byte LoadSgbDelegate(SharedGroupLayoutInstance* self, byte* pathBytes);
     internal delegate LayerManager* GetPreferredLayerManagerDelegate(LayoutManager* layoutManager);
@@ -30,6 +31,9 @@ public unsafe class SharedGroupLayoutFunctions
 
     [Signature("48 89 5C 24 ?? 57 48 83 EC ?? 48 83 B9 ?? ?? ?? ?? 00 48 8B DA 48 8B F9 0F 85")]
     internal AssignResourceHandlerDelegate? AssignResourceInternal = null;
+    
+    [Signature("48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 41 56 41 57 48 83 EC ?? 48 8B B1 ?? ?? ?? ?? 45 0F B6 F9")]
+    internal CreateSgbDelegate? CreateSgbInternal = null;
     
     [Signature("40 55 57 41 55 48 8D 6C 24 ?? 48 81 EC ?? ?? ?? ?? 48 8B F9")]
     internal FixGroupChildrenDelegate? FixGroupChildrenInternal = null;
@@ -83,6 +87,21 @@ public unsafe class SharedGroupLayoutFunctions
         fixed (byte* pathPtr = bytes)
         { 
             AssignResourceInternal(self, pathPtr);
+        }
+    }
+
+    public bool CreateSgb(SharedGroupLayoutInstance* self, string path)
+    {
+        if (CreateSgbInternal == null)
+            throw new InvalidOperationException("CreateSgb sig was not found!");
+
+        var bytes = Encoding.UTF8.GetBytes(path + "\0");
+        var creator = LayoutWorld.Instance()->ActiveLayout;
+        
+        fixed (byte* pathPtr = bytes)
+        {
+            var success = CreateSgbInternal(self, creator, pathPtr, 1);
+            return *success;
         }
     }
 

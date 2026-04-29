@@ -28,7 +28,7 @@ public class SpawnedObject : IDisposable
     public bool IsValid => Type != ObjectType.Invalid;
     public bool IsHighlighted { get; private set; } = false;
 
-    public SpawnedObject(string path, Vector3? position = null, Quaternion? rotation = null, Vector3? scale = null, bool collide = false)
+    public SpawnedObject(string path, Vector3? position = null, Quaternion? rotation = null, Vector3? scale = null, bool collide = false, Vector4? color = null)
     {
         Path = path;
         Name = Path;
@@ -38,6 +38,7 @@ public class SpawnedObject : IDisposable
         var pos = position ?? Vector3.Zero;
         var rot = rotation ?? Quaternion.Identity;
         var sca = scale ?? Vector3.One;
+        var col = color ?? Vector4.Zero;
         
         switch (ext)
         {
@@ -51,7 +52,7 @@ public class SpawnedObject : IDisposable
                 break;
             case ".sgb":
                 Type = ObjectType.SharedGroup;
-                Group = new Group(path, pos, rot, sca, collide);
+                Group = new Group(path, pos, rot, sca, collide, col);
                 break;
             default:
                 Type = ObjectType.Invalid;

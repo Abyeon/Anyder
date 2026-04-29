@@ -34,9 +34,9 @@ public unsafe class Group : IDisposable
         AnyderService.SharedGroupLayoutFunctions.Ctor(Data);
         
         AnyderService.Log.Verbose($"Attempting to create group {path} @ {((IntPtr)Data):x8}");
+        
         Path = path;
         Data->Layout = LayoutWorld.Instance()->ActiveLayout;
- 
 
         if (!LayoutWorld.Instance()->ActiveLayout->Layers.ContainsKey(6969))
         {
@@ -65,7 +65,7 @@ public unsafe class Group : IDisposable
         Transform.OnUpdate += UpdateTransform;
         
         Collide = collide;
-        Color = color == null ? Vector4.Zero : (Vector4)color;
+        Color = color ?? Vector4.Zero;
         
         AnyderService.Framework.RunOnTick(SetModel);
     }
@@ -83,6 +83,8 @@ public unsafe class Group : IDisposable
         {
             AnyderService.SharedGroupLayoutFunctions.FixGroupChildren(Data);
         }
+        
+        AnyderService.Framework.RunOnTick(() => SetColor(Color));
     }
 
     private void UpdateTransform()
@@ -103,6 +105,12 @@ public unsafe class Group : IDisposable
             if (graphics == null) continue;
             graphics->UpdateCulling();
         }
+    }
+
+    public void SetColor(Vector4 color)
+    {
+        var byteColor = color.ToByteColor();
+        Data->ApplyStain(&byteColor);
     }
 
     public void SetCollision(bool enabled)
