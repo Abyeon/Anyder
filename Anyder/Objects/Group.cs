@@ -84,7 +84,7 @@ public unsafe class Group : IDisposable
             AnyderService.SharedGroupLayoutFunctions.FixGroupChildren(Data);
         }
         
-        AnyderService.Framework.RunOnTick(() => SetColor(Color));
+        AnyderService.Framework.RunOnTick(() => SetColor(Color), TimeSpan.FromSeconds(1));
     }
 
     private void UpdateTransform()
