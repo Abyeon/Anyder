@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Numerics;
+using System.Text;
 using Anyder.Interop;
 using Dalamud.Bindings.ImGui;
 using Dalamud.Utility.Numerics;
@@ -10,7 +11,7 @@ namespace Anyder.Objects;
 
 public unsafe class Model : IDisposable
 {
-    public readonly BgObject* BgObject;
+    public readonly BgObject* Data;
     public string Path;
     public Transform Transform;
     public bool Dirty = true;
@@ -22,17 +23,25 @@ public unsafe class Model : IDisposable
         {
             field = value;
             var color = value.ToByteColor();
-            BgObject->TrySetStainColor(color);
+            Data->TrySetStainColor(color);
         }
     }
 
     public Model(string path, Vector3? position = null, Quaternion? rotation = null, Vector3? scale = null)
     {
         AnyderService.Log.Verbose($"Creating BgObject {path}");
-        if (AnyderService.BgObjectFunctions == null) throw new NullReferenceException("BgObject functions are not initialized");
-        
         Path = path;
-        BgObject = AnyderService.BgObjectFunctions.BgObjectCreate(path);
+        
+        var pathBytes = Encoding.UTF8.GetBytes(path + "\0");
+        var poolBytes = "Anyder.BgObject\0"u8.ToArray();
+
+        fixed (byte* pathPtr = pathBytes)
+        {
+            fixed (byte* poolPtr = poolBytes)
+            {
+                Data = BgObject.Create(pathPtr, poolPtr, null);
+            }
+        }
         
         Transform = new Transform()
         {
@@ -44,9 +53,9 @@ public unsafe class Model : IDisposable
         Transform.OnUpdate += UpdateTransform; 
         UpdateTransform();
 
-        if (BgObject->ModelResourceHandle->LoadState == 7)
+        if (Data->ModelResourceHandle->LoadState == 7)
         {
-            var ex = (BgObjectEx*)BgObject;
+            var ex = (BgObjectEx*)Data;
             ex->UpdateCulling();
             Dirty = false;
         }
@@ -54,42 +63,41 @@ public unsafe class Model : IDisposable
 
     public void SetAlpha(byte alpha)
     {
-        var ex = (BgObjectEx*)BgObject;
+        var ex = (BgObjectEx*)Data;
         ex->Alpha = alpha;
         UpdateRender();
     }
 
     public void SetHighlightColor(byte color)
     {
-        var ex = (BgObjectEx*)BgObject;
+        var ex = (BgObjectEx*)Data;
         ex->HighlightFlags = color;
         UpdateRender();
     }
 
     private void UpdateTransform()
     { 
-        var ex = (BgObjectEx*)BgObject;
-        BgObject->Position = Transform.Position;
-        BgObject->Rotation = Transform.Rotation;
-        BgObject->Scale = Transform.Scale;
+        Data->Position = Transform.Position;
+        Data->Rotation = Transform.Rotation;
+        Data->Scale = Transform.Scale;
         TryFixCulling();
     }
 
     public void UpdateRender()
     {
         AnyderService.Log.Verbose($"Updating BgObject {Path}");
-        var ex = (BgObjectEx*)BgObject;
+        var ex = (BgObjectEx*)Data;
         ex->UpdateRender();
     }
 
     public void TryFixCulling()
     {
         AnyderService.Log.Verbose($"Trying to fix BgObject culling {Path}");
-        if (BgObject == null) return;
+        if (Data == null) return;
         
-        if (BgObject->ModelResourceHandle->LoadState == 7)
+        if (Data->ModelResourceHandle->LoadState == 7)
         {
-            var ex = (BgObjectEx*)BgObject;
+            var ex = (BgObjectEx*)Data;
             ex->UpdateCulling();
         }
     }
@@ -101,9 +109,9 @@ public unsafe class Model : IDisposable
         AnyderService.Log.Verbose($"Disposing BgObject {Path}");
         AnyderService.Framework.RunOnFrameworkThread(() =>
         {
-            if (BgObject == null) return;
+            if (Data == null) return;
         
-            var ex = (BgObjectEx*) BgObject;
+            var ex = (BgObjectEx*) Data;
             ex->CleanupRender();
             ex->Dtor();
         });

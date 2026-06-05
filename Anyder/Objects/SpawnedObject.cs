@@ -38,7 +38,6 @@ public class SpawnedObject : IDisposable
         var pos = position ?? Vector3.Zero;
         var rot = rotation ?? Quaternion.Identity;
         var sca = scale ?? Vector3.One;
-        var col = color ?? Vector4.Zero;
         
         switch (ext)
         {
@@ -52,7 +51,7 @@ public class SpawnedObject : IDisposable
                 break;
             case ".sgb":
                 Type = ObjectType.SharedGroup;
-                Group = new Group(path, pos, rot, sca, collide, col);
+                Group = new Group(path, pos, rot, sca, collide, color);
                 break;
             default:
                 Type = ObjectType.Invalid;

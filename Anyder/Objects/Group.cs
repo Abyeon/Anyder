@@ -2,6 +2,7 @@
 using System.Numerics;
 using Anyder.Interop;
 using Dalamud.Utility.Numerics;
+using FFXIVClientStructs.FFXIV.Client.Graphics;
 using FFXIVClientStructs.FFXIV.Client.LayoutEngine;
 using FFXIVClientStructs.FFXIV.Client.LayoutEngine.Group;
 using FFXIVClientStructs.FFXIV.Client.LayoutEngine.Layer;
@@ -17,14 +18,13 @@ public unsafe class Group : IDisposable
     public Transform Transform;
     public bool Collide;
 
-    public Vector4 Color
+    public Vector4? Color
     {
         get;
         set
         {
             field = value;
-            var color = value.ToByteColor();
-            Data->ApplyStain(&color);
+            SetColor(value);
         }
     }
 
@@ -32,28 +32,11 @@ public unsafe class Group : IDisposable
     {
         Data = IMemorySpace.GetDefaultSpace()->Malloc<SharedGroupLayoutInstance>();
         AnyderService.SharedGroupLayoutFunctions.Ctor(Data);
+        AnyderService.SharedGroupLayoutFunctions.Init(Data, path);
         
         AnyderService.Log.Verbose($"Attempting to create group {path} @ {((IntPtr)Data):x8}");
         
         Path = path;
-        Data->Layout = LayoutWorld.Instance()->ActiveLayout;
-
-        if (!LayoutWorld.Instance()->ActiveLayout->Layers.ContainsKey(6969))
-        {
-            var layer = IMemorySpace.GetDefaultSpace()->Malloc<LayerManager>();
-
-            if (AnyderService.SharedGroupLayoutFunctions.LayerCtorInternal != null)
-            {
-                var manager = AnyderService.SharedGroupLayoutFunctions.LayerCtorInternal.Invoke(layer, LayoutWorld.Instance()->ActiveLayout);
-                layer->Id = 6969;
-                layer->Initialize();
-                Data->Layer = manager;
-            }
-        }
-        else
-        {
-            Data->Layer = LayoutWorld.Instance()->ActiveLayout->Layers[6969];
-        }
 
         Transform = new Transform()
         {
@@ -65,26 +48,13 @@ public unsafe class Group : IDisposable
         Transform.OnUpdate += UpdateTransform;
         
         Collide = collide;
-        Color = color ?? Vector4.Zero;
+        Color = color;
         
-        AnyderService.Framework.RunOnTick(SetModel);
-    }
+        AnyderService.Log.Verbose($"Tried to use color {color}");
 
-    private void SetModel()
-    {
-        AnyderService.SharedGroupLayoutFunctions.LoadSgb(Data, Path);
-        
         UpdateTransform();
-
-        var first = (IntPtr)Data->Instances.Instances.First;
-        var last = (IntPtr)Data->Instances.Instances.Last;
         
-        if (first != last)
-        {
-            AnyderService.SharedGroupLayoutFunctions.FixGroupChildren(Data);
-        }
-        
-        AnyderService.Framework.RunOnTick(() => SetColor(Color), TimeSpan.FromSeconds(1));
+        AnyderService.Framework.RunOnTick(() => SetColor(color), TimeSpan.FromSeconds(1));
     }
 
     private void UpdateTransform()
@@ -107,9 +77,16 @@ public unsafe class Group : IDisposable
         }
     }
 
-    public void SetColor(Vector4 color)
+    public void SetColor(Vector4? color)
     {
-        var byteColor = color.ToByteColor();
+        if (!color.HasValue)
+        {
+            var defaultStain = SharedGroupLayoutInstance.GetObjectStainColorByIndex(Data->StainInfo->DefaultStainIndex);
+            Data->ApplyStain(defaultStain);
+            return;
+        }
+
+        var byteColor = color.Value.ToByteColor();
         Data->ApplyStain(&byteColor);
     }
 
