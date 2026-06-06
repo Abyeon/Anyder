@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Dalamud.Utility.Signatures;
@@ -17,6 +18,8 @@ public unsafe class SharedGroupLayoutFunctions
     internal delegate void FixGroupChildrenDelegate(SharedGroupLayoutInstance* self);
     internal delegate void AssignResourceHandlerDelegate(SharedGroupLayoutInstance* self, byte* pathBytes);
     internal delegate sbyte InitSgbDelegate(SharedGroupLayoutInstance* self, nint* initArgs, byte* pathBytes, byte a4);
+    internal delegate byte SetPropertyDelegate(SharedGroupLayoutInstance* self, uint a2, ushort id);
+    internal delegate byte ApplyPropertyDelegate(SharedGroupLayoutInstance* self, nint a2, ushort a3, ushort a4);
     internal delegate LayerManager* TryGetLayerDelegate(LayoutManager* layout, ushort key);
     internal delegate IntPtr UnknownLayerFunctionDelegate(LayerManager* creator, SharedGroupLayoutInstance* self);
     internal delegate SharedGroupLayoutInstance* CtorDelegate(SharedGroupLayoutInstance* self);
@@ -39,6 +42,12 @@ public unsafe class SharedGroupLayoutFunctions
     
     [Signature("48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 41 56 41 57 48 83 EC ?? 48 8B B1 ?? ?? ?? ?? 45 0F B6 F9")]
     internal InitSgbDelegate? InitSgbInternal = null;
+    
+    [Signature("40 57 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 84 24 ?? ?? ?? ?? 4C 8B 89")]
+    internal SetPropertyDelegate? SetPropertyInternal = null;
+
+    [Signature("40 53 55 56 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 84 24 ?? ?? ?? ?? 4C 8B 91")]
+    internal ApplyPropertyDelegate? ApplyPropertyInternal = null;
     
     [Signature("4C 8B 81 ?? ?? ?? ?? 4C 8B D1 44 0F B7 CA")]
     internal TryGetLayerDelegate? TryGetLayerInternal = null;
@@ -131,6 +140,26 @@ public unsafe class SharedGroupLayoutFunctions
             var result = InitSgbInternal(self, initArgs, pathPtr, 1);
             return result;
         }
+    }
+
+    public byte SetProperty(SharedGroupLayoutInstance* self, ushort id)
+    {
+        if (SetPropertyInternal == null)
+            throw new InvalidOperationException("SetWallpaper sig was not found!");
+        
+        var ret = SetPropertyInternal(self, 0, id);
+        ApplyProperty(self);
+
+        //self->Layer
+        return ret;
+    }
+
+    public byte ApplyProperty(SharedGroupLayoutInstance* self)
+    {
+        if (ApplyPropertyInternal == null)
+            throw new InvalidOperationException("ApplyProperty sig was not found!");
+        
+        return ApplyPropertyInternal(self, 0, 0, 0);
     }
 
     public LayerManager* TryGetLayer(LayoutManager* layout, ushort key)

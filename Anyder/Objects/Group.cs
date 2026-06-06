@@ -31,10 +31,19 @@ public unsafe class Group : IDisposable
     public Group(string path, Vector3? position = null, Quaternion? rotation = null, Vector3? scale = null, bool collide = true, Vector4? color = null)
     {
         Data = IMemorySpace.GetDefaultSpace()->Malloc<SharedGroupLayoutInstance>();
-        AnyderService.SharedGroupLayoutFunctions.Ctor(Data);
-        AnyderService.SharedGroupLayoutFunctions.Init(Data, path);
         
         AnyderService.Log.Verbose($"Attempting to create group {path} @ {((IntPtr)Data):x8}");
+
+        try
+        {
+            AnyderService.SharedGroupLayoutFunctions.Ctor(Data);
+            AnyderService.SharedGroupLayoutFunctions.Init(Data, path);
+        }
+        catch (Exception e)
+        {
+            AnyderService.Log.Error($"Failed to create group {path}: {e}");
+        }
+        
         
         Path = path;
 
@@ -50,8 +59,6 @@ public unsafe class Group : IDisposable
         Collide = collide;
         Color = color;
         
-        AnyderService.Log.Verbose($"Tried to use color {color}");
-
         UpdateTransform();
         
         AnyderService.Framework.RunOnTick(() => SetColor(color), TimeSpan.FromSeconds(1));
@@ -60,6 +67,8 @@ public unsafe class Group : IDisposable
     private void UpdateTransform()
     {
         var t = Data->GetTransformImpl();
+        if (t == null) return;
+        
         t->Translation = Transform.Position;
         t->Rotation = Transform.Rotation;
         t->Scale = Transform.Scale;
@@ -79,6 +88,8 @@ public unsafe class Group : IDisposable
 
     public void SetColor(Vector4? color)
     {
+        if (Data->StainInfo == null) return;
+        
         if (!color.HasValue)
         {
             var defaultStain = SharedGroupLayoutInstance.GetObjectStainColorByIndex(Data->StainInfo->DefaultStainIndex);
@@ -88,6 +99,13 @@ public unsafe class Group : IDisposable
 
         var byteColor = color.Value.ToByteColor();
         Data->ApplyStain(&byteColor);
+    }
+
+    public void SetWallpaper(ushort id)
+    {
+        if (Data->StainInfo == null) return;
+
+        AnyderService.SharedGroupLayoutFunctions.SetProperty(Data, id);
     }
 
     public void SetCollision(bool enabled)
