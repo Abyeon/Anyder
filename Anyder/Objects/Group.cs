@@ -98,8 +98,8 @@ public unsafe class Group : IDisposable
 
     private bool TrySetColorInternal()
     {
-        var ex = (StainInfoEx*)Data->StainInfo;
-
+        if (!AnyderService.SharedGroupLayoutFunctions.ReadyToStain(Data)) return false;
+        
         ByteColor color;
         if (!Color.HasValue)
         {
@@ -111,11 +111,19 @@ public unsafe class Group : IDisposable
         }
         
         Data->ApplyStain(&color);
-        return (ex->Color.RGBA == color.RGBA) && ((Data->StainInfo->Flags & SharedGroupStainFlags.StainModified) != 0);
+        Data->ReapplyStain();
+        return true;
     }
 
     private void ApplyStainTask(IFramework framework)
     {
+        if (Data == null)
+        {
+            AnyderService.Framework.Update -= ApplyStainTask;
+        }
+        
+        AnyderService.Log.Verbose($"Applying stain {Path}");
+        
         if (TrySetColorInternal())
         {
             AnyderService.Framework.Update -= ApplyStainTask;

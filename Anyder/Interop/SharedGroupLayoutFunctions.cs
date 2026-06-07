@@ -20,6 +20,7 @@ public unsafe class SharedGroupLayoutFunctions
     internal delegate sbyte InitSgbDelegate(SharedGroupLayoutInstance* self, nint* initArgs, byte* pathBytes, byte a4);
     internal delegate byte SetPropertyDelegate(SharedGroupLayoutInstance* self, uint a2, ushort id);
     internal delegate byte ApplyPropertyDelegate(SharedGroupLayoutInstance* self, nint a2, ushort a3, ushort a4);
+    internal delegate bool ReadyToStainDelegate(SharedGroupLayoutInstance* self);
     internal delegate LayerManager* TryGetLayerDelegate(LayoutManager* layout, ushort key);
     internal delegate IntPtr UnknownLayerFunctionDelegate(LayerManager* creator, SharedGroupLayoutInstance* self);
     internal delegate SharedGroupLayoutInstance* CtorDelegate(SharedGroupLayoutInstance* self);
@@ -48,6 +49,9 @@ public unsafe class SharedGroupLayoutFunctions
 
     [Signature("40 53 55 56 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 84 24 ?? ?? ?? ?? 4C 8B 91")]
     internal ApplyPropertyDelegate? ApplyPropertyInternal = null;
+
+    [Signature("40 56 48 83 EC ?? 8B 91 ?? ?? ?? ?? 48 8B F1 C1 E2 ?? C1 FA ?? 85 D2 74 ?? 83 EA ?? 74 ?? 83 EA ?? 74 ?? B0")]
+    internal ReadyToStainDelegate? ReadyToStainInternal = null;
     
     [Signature("4C 8B 81 ?? ?? ?? ?? 4C 8B D1 44 0F B7 CA")]
     internal TryGetLayerDelegate? TryGetLayerInternal = null;
@@ -160,6 +164,14 @@ public unsafe class SharedGroupLayoutFunctions
             throw new InvalidOperationException("ApplyProperty sig was not found!");
         
         return ApplyPropertyInternal(self, 0, 0, 0);
+    }
+
+    public bool ReadyToStain(SharedGroupLayoutInstance* self)
+    {
+        if (ReadyToStainInternal == null)
+            throw new InvalidOperationException("ReadyToStain sig was not found!");
+        
+        return ReadyToStainInternal(self);
     }
 
     public LayerManager* TryGetLayer(LayoutManager* layout, ushort key)
