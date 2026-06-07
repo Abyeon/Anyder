@@ -92,7 +92,12 @@ public unsafe class Group : IDisposable
     {
         if (Data->StainInfo == null) return;
         
-        SharedGroupStainFlags previousFlags = Data->StainInfo->Flags;
+        if ((Data->StainInfo->Flags & SharedGroupStainFlags.StainModified) == 0)
+        {
+            AnyderService.Framework.Update += ApplyStainTask;
+            return;
+        }
+        
         if (!color.HasValue)
         {
             ByteColor* defaultStain = SharedGroupLayoutInstance.GetObjectStainColorByIndex(Data->StainInfo->DefaultStainIndex);
@@ -105,7 +110,7 @@ public unsafe class Group : IDisposable
         }
         
         // Failed to apply stain, poll to apply
-        if ((previousFlags & Data->StainInfo->Flags) == SharedGroupStainFlags.None)
+        if (Data->StainInfo->Flags == SharedGroupStainFlags.None)
         {
             AnyderService.Framework.Update += ApplyStainTask;
         }
@@ -113,7 +118,7 @@ public unsafe class Group : IDisposable
 
     private void ApplyStainTask(IFramework framework)
     {
-        SharedGroupStainFlags previousFlags = Data->StainInfo->Flags;
+        if (Data->StainInfo->Flags == SharedGroupStainFlags.StainModified) return;
         
         if (!Color.HasValue)
         {
@@ -126,7 +131,7 @@ public unsafe class Group : IDisposable
             Data->ApplyStain(&byteColor);
         }
         
-        if ((previousFlags & Data->StainInfo->Flags) == SharedGroupStainFlags.None)
+        if (Data->StainInfo->Flags == SharedGroupStainFlags.StainModified)
         {
             AnyderService.Framework.Update -= ApplyStainTask;
         }
