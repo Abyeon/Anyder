@@ -25,7 +25,7 @@ public unsafe class Group : IDisposable
         set
         {
             field = value;
-            SetColor(value);
+            SetColor();
         }
     }
 
@@ -62,7 +62,7 @@ public unsafe class Group : IDisposable
         
         UpdateTransform();
         
-        AnyderService.Framework.RunOnTick(() => SetColor(color));
+        AnyderService.Framework.RunOnTick(SetColor);
     }
 
     private void UpdateTransform()
@@ -87,8 +87,7 @@ public unsafe class Group : IDisposable
         }
     }
     
-    
-    public void SetColor(Vector4? color)
+    public void SetColor()
     {
         if (Data->StainInfo == null) return;
         
@@ -98,16 +97,7 @@ public unsafe class Group : IDisposable
             return;
         }
         
-        if (!color.HasValue)
-        {
-            ByteColor* defaultStain = SharedGroupLayoutInstance.GetObjectStainColorByIndex(Data->StainInfo->DefaultStainIndex);
-            Data->ApplyStain(defaultStain);
-        }
-        else
-        {
-            var byteColor = color.Value.ToByteColor();
-            Data->ApplyStain(&byteColor);
-        }
+        SetColorInternal();
         
         // Failed to apply stain, poll to apply
         if (Data->StainInfo->Flags == SharedGroupStainFlags.None)
@@ -116,9 +106,9 @@ public unsafe class Group : IDisposable
         }
     }
 
-    private void ApplyStainTask(IFramework framework)
+    private void SetColorInternal()
     {
-        if (Data->StainInfo->Flags == SharedGroupStainFlags.StainModified) return;
+        AnyderService.Log.Debug($"{Path}\nInitial flags {Data->StainInfo->Flags}");
         
         if (!Color.HasValue)
         {
@@ -131,7 +121,17 @@ public unsafe class Group : IDisposable
             Data->ApplyStain(&byteColor);
         }
         
-        if (Data->StainInfo->Flags == SharedGroupStainFlags.StainModified)
+        AnyderService.Log.Debug($"After flags {Data->StainInfo->Flags}");
+    }
+
+    private void ApplyStainTask(IFramework framework)
+    {
+        if (Data->StainInfo->Flags == SharedGroupStainFlags.StainModified) return;
+        SharedGroupStainFlags prevFlags = Data->StainInfo->Flags;
+        
+        SetColorInternal();
+        
+        if (Data->StainInfo->Flags == prevFlags)
         {
             AnyderService.Framework.Update -= ApplyStainTask;
         }
@@ -183,6 +183,8 @@ public unsafe class Group : IDisposable
     public void Dispose()
     {
         AnyderService.Log.Verbose($"Disposing group {Path}");
+        AnyderService.Framework.Update -= ApplyStainTask;
+        
         if (Data == null) return;
         
         Data->Deinit();
