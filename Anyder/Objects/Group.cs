@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Numerics;
 using Anyder.Interop;
+using Dalamud.Plugin.Services;
 using Dalamud.Utility.Numerics;
 using FFXIVClientStructs.FFXIV.Client.Graphics;
 using FFXIVClientStructs.FFXIV.Client.LayoutEngine;
@@ -61,7 +62,7 @@ public unsafe class Group : IDisposable
         
         UpdateTransform();
         
-        AnyderService.Framework.RunOnTick(() => SetColor(color), TimeSpan.FromSeconds(1));
+        AnyderService.Framework.RunOnTick(() => SetColor(color));
     }
 
     private void UpdateTransform()
@@ -85,20 +86,50 @@ public unsafe class Group : IDisposable
             graphics->UpdateCulling();
         }
     }
-
+    
+    
     public void SetColor(Vector4? color)
     {
         if (Data->StainInfo == null) return;
         
+        SharedGroupStainFlags previousFlags = Data->StainInfo->Flags;
         if (!color.HasValue)
         {
-            var defaultStain = SharedGroupLayoutInstance.GetObjectStainColorByIndex(Data->StainInfo->DefaultStainIndex);
+            ByteColor* defaultStain = SharedGroupLayoutInstance.GetObjectStainColorByIndex(Data->StainInfo->DefaultStainIndex);
             Data->ApplyStain(defaultStain);
-            return;
         }
+        else
+        {
+            var byteColor = color.Value.ToByteColor();
+            Data->ApplyStain(&byteColor);
+        }
+        
+        // Failed to apply stain, poll to apply
+        if ((previousFlags & Data->StainInfo->Flags) == SharedGroupStainFlags.None)
+        {
+            AnyderService.Framework.Update += ApplyStainTask;
+        }
+    }
 
-        var byteColor = color.Value.ToByteColor();
-        Data->ApplyStain(&byteColor);
+    private void ApplyStainTask(IFramework framework)
+    {
+        SharedGroupStainFlags previousFlags = Data->StainInfo->Flags;
+        
+        if (!Color.HasValue)
+        {
+            ByteColor* defaultStain = SharedGroupLayoutInstance.GetObjectStainColorByIndex(Data->StainInfo->DefaultStainIndex);
+            Data->ApplyStain(defaultStain);
+        }
+        else
+        {
+            var byteColor = Color.Value.ToByteColor();
+            Data->ApplyStain(&byteColor);
+        }
+        
+        if ((previousFlags & Data->StainInfo->Flags) == SharedGroupStainFlags.None)
+        {
+            AnyderService.Framework.Update -= ApplyStainTask;
+        }
     }
 
     public void SetWallpaper(ushort id)
