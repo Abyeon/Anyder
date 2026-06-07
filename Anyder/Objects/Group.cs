@@ -90,48 +90,33 @@ public unsafe class Group : IDisposable
     public void SetColor()
     {
         if (Data->StainInfo == null) return;
-        
-        if ((Data->StainInfo->Flags & SharedGroupStainFlags.StainModified) == 0)
-        {
-            AnyderService.Framework.Update += ApplyStainTask;
-            return;
-        }
-        
-        SetColorInternal();
-        
-        // Failed to apply stain, poll to apply
-        if (Data->StainInfo->Flags == SharedGroupStainFlags.None)
+        if (!TrySetColorInternal())
         {
             AnyderService.Framework.Update += ApplyStainTask;
         }
     }
 
-    private void SetColorInternal()
+    private bool TrySetColorInternal()
     {
-        AnyderService.Log.Debug($"{Path}\nInitial flags {Data->StainInfo->Flags}");
-        
+        var ex = (StainInfoEx*)Data->StainInfo;
+
+        ByteColor color;
         if (!Color.HasValue)
         {
-            ByteColor* defaultStain = SharedGroupLayoutInstance.GetObjectStainColorByIndex(Data->StainInfo->DefaultStainIndex);
-            Data->ApplyStain(defaultStain);
+            color = *SharedGroupLayoutInstance.GetObjectStainColorByIndex(Data->StainInfo->DefaultStainIndex);
         }
         else
         {
-            var byteColor = Color.Value.ToByteColor();
-            Data->ApplyStain(&byteColor);
+            color = Color.Value.ToByteColor();
         }
         
-        AnyderService.Log.Debug($"After flags {Data->StainInfo->Flags}");
+        Data->ApplyStain(&color);
+        return (ex->Color.RGBA == color.RGBA) && ((Data->StainInfo->Flags & SharedGroupStainFlags.StainModified) != 0);
     }
 
     private void ApplyStainTask(IFramework framework)
     {
-        if (Data->StainInfo->Flags == SharedGroupStainFlags.StainModified) return;
-        SharedGroupStainFlags prevFlags = Data->StainInfo->Flags;
-        
-        SetColorInternal();
-        
-        if (Data->StainInfo->Flags == prevFlags)
+        if (TrySetColorInternal())
         {
             AnyderService.Framework.Update -= ApplyStainTask;
         }
