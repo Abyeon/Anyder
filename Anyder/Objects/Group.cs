@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Numerics;
 using Anyder.Interop;
 using Dalamud.Plugin.Services;
@@ -25,7 +26,7 @@ public unsafe class Group : IDisposable
         set
         {
             field = value;
-            SetColor(value);
+            if (HasStains()) SetColor(value);
         }
     }
 
@@ -61,7 +62,8 @@ public unsafe class Group : IDisposable
         
         UpdateTransform();
         
-        FrameworkQueue.Enqueue(ApplyStainTask);
+        AnyderService.Log.Debug($"Has stains? {HasStains()}");
+        AnyderService.Framework.RunOnTick(() => FrameworkQueue.Enqueue(ApplyStainTask), delayTicks: 1);
     }
 
     private void UpdateTransform()
@@ -88,14 +90,12 @@ public unsafe class Group : IDisposable
 
     public bool HasStains()
     {
-        if (Data == null || Data->StainInfo == null) return false;
-        return true;
+        string[] housing = ["/hou/", "/ind", "/mji/"];
+        return housing.Any(Path.Contains) || (Path.Contains("/pvp_xx/") && Path.Contains("/cst/"));
     }
 
     public void SetColor(Vector4? color)
     {
-        if (!HasStains()) return;
-        
         ByteColor byteColor;
         if (!color.HasValue)
         {
@@ -112,12 +112,11 @@ public unsafe class Group : IDisposable
 
     private bool TrySetColor(Vector4? color)
     {
-        if (!HasStains()) return true;
         var layout = (LayoutEx*)Data->Layout;
         if (!AnyderService.SharedGroupLayoutFunctions.ReadyToStain(Data)) return false;
         
         SetColor(color);
-
+        
         return layout->StainNeedsUpdating != 1;
     }
 
@@ -126,8 +125,11 @@ public unsafe class Group : IDisposable
         AnyderService.Log.Verbose($"Applying stain {Color} to {Path}");
         if (Data == null || TrySetColor(Color))
         {
+            AnyderService.Log.Verbose($"Successfully applied stain!");
             return;
         }
+        
+        AnyderService.Log.Verbose($"Failed to apply stain, attempting again..");
         
         FrameworkQueue.Enqueue(ApplyStainTask);
     }
