@@ -99,10 +99,9 @@ public unsafe class Model : IDisposable
         AnyderService.Framework.RunOnFrameworkThread(() =>
         {
             if (Data == null) return;
-        
-            var ex = (BgObjectEx*) Data;
-            ex->CleanupRender();
-            ex->Dtor();
+            
+            Data->CleanupRender();
+            Data->Dtor(1);
         });
         
         Transform.OnUpdate -= UpdateTransform;
