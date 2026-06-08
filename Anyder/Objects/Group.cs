@@ -25,7 +25,7 @@ public unsafe class Group : IDisposable
         set
         {
             field = value;
-            FrameworkQueue.Enqueue(ApplyStainTask);
+            SetColor(value);
         }
     }
 
@@ -87,23 +87,28 @@ public unsafe class Group : IDisposable
         }
     }
 
-    private bool TrySetColorInternal()
+    public void SetColor(Vector4? color)
+    {
+        ByteColor byteColor;
+        if (!color.HasValue)
+        {
+            byteColor = *SharedGroupLayoutInstance.GetObjectStainColorByIndex(Data->StainInfo->DefaultStainIndex);
+        }
+        else
+        {
+            byteColor = color.Value.ToByteColor();
+        }
+        
+        Data->ApplyStain(&byteColor);
+        Data->ReapplyStain();
+    }
+
+    private bool TrySetColor(Vector4? color)
     {
         var layout = (LayoutEx*)Data->Layout;
         if (!AnyderService.SharedGroupLayoutFunctions.ReadyToStain(Data)) return false;
         
-        ByteColor color;
-        if (!Color.HasValue)
-        {
-            color = *SharedGroupLayoutInstance.GetObjectStainColorByIndex(Data->StainInfo->DefaultStainIndex);
-        }
-        else
-        {
-            color = Color.Value.ToByteColor();
-        }
-        
-        Data->ApplyStain(&color);
-        Data->ReapplyStain();
+        SetColor(color);
 
         return layout->StainNeedsUpdating != 1;
     }
@@ -111,7 +116,7 @@ public unsafe class Group : IDisposable
     private void ApplyStainTask()
     {
         AnyderService.Log.Verbose($"Applying stain {Color} to {Path}");
-        if (Data == null || TrySetColorInternal())
+        if (Data == null || TrySetColor(Color))
         {
             return;
         }
