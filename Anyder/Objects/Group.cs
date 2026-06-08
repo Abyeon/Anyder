@@ -63,7 +63,8 @@ public unsafe class Group : IDisposable
         UpdateTransform();
         
         AnyderService.Log.Debug($"Has stains? {HasStains()}");
-        AnyderService.Framework.RunOnTick(() => FrameworkQueue.Enqueue(ApplyStainTask), delayTicks: 1);
+        FrameworkQueue.Enqueue(ApplyStainTask);
+        FrameworkQueue.Enqueue(ApplyStainTask);
     }
 
     private void UpdateTransform()
