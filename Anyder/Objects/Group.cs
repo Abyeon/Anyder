@@ -45,7 +45,6 @@ public unsafe class Group : IDisposable
             AnyderService.Log.Error($"Failed to create group {path}: {e}");
         }
         
-        
         Path = path;
 
         Transform = new Transform()
@@ -87,8 +86,16 @@ public unsafe class Group : IDisposable
         }
     }
 
+    public bool HasStains()
+    {
+        if (Data == null || Data->StainInfo == null) return false;
+        return true;
+    }
+
     public void SetColor(Vector4? color)
     {
+        if (!HasStains()) return;
+        
         ByteColor byteColor;
         if (!color.HasValue)
         {
@@ -105,6 +112,7 @@ public unsafe class Group : IDisposable
 
     private bool TrySetColor(Vector4? color)
     {
+        if (!HasStains()) return true;
         var layout = (LayoutEx*)Data->Layout;
         if (!AnyderService.SharedGroupLayoutFunctions.ReadyToStain(Data)) return false;
         

@@ -31,17 +31,7 @@ public unsafe class Model : IDisposable
     {
         AnyderService.Log.Verbose($"Creating BgObject {path}");
         Path = path;
-        
-        var pathBytes = Encoding.UTF8.GetBytes(path + "\0");
-        var poolBytes = "Anyder.BgObject\0"u8.ToArray();
-
-        fixed (byte* pathPtr = pathBytes)
-        {
-            fixed (byte* poolPtr = poolBytes)
-            {
-                Data = BgObject.Create(pathPtr, poolPtr, null);
-            }
-        }
+        Data = BgObject.Create(path, "Anyder.BgObject");
         
         Transform = new Transform()
         {
@@ -53,10 +43,9 @@ public unsafe class Model : IDisposable
         Transform.OnUpdate += UpdateTransform; 
         UpdateTransform();
 
-        if (Data->ModelResourceHandle->LoadState == 7)
+        if (Data != null && Data->ModelResourceHandle->LoadState == 7)
         {
-            var ex = (BgObjectEx*)Data;
-            ex->UpdateCulling();
+            Data->UpdateCulling();
             Dirty = false;
         }
     }
@@ -85,9 +74,9 @@ public unsafe class Model : IDisposable
 
     public void UpdateRender()
     {
+        if (Data == null) return;
         AnyderService.Log.Verbose($"Updating BgObject {Path}");
-        var ex = (BgObjectEx*)Data;
-        ex->UpdateRender();
+        Data->UpdateRender();
     }
 
     public void TryFixCulling()
@@ -97,8 +86,8 @@ public unsafe class Model : IDisposable
         
         if (Data->ModelResourceHandle->LoadState == 7)
         {
-            var ex = (BgObjectEx*)Data;
-            ex->UpdateCulling();
+            Data->UpdateRender();
+            Dirty = false;
         }
     }
 
