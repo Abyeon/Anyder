@@ -25,7 +25,7 @@ public unsafe class Group : IDisposable
         set
         {
             field = value;
-            SetColor();
+            FrameworkQueue.Enqueue(ApplyStainTask);
         }
     }
 
@@ -62,7 +62,7 @@ public unsafe class Group : IDisposable
         
         UpdateTransform();
         
-        AnyderService.Framework.RunOnTick(SetColor);
+        FrameworkQueue.Enqueue(ApplyStainTask);
     }
 
     private void UpdateTransform()
@@ -86,18 +86,10 @@ public unsafe class Group : IDisposable
             graphics->UpdateCulling();
         }
     }
-    
-    public void SetColor()
-    {
-        if (Data->StainInfo == null) return;
-        if (!TrySetColorInternal())
-        {
-            AnyderService.Framework.Update += ApplyStainTask;
-        }
-    }
 
     private bool TrySetColorInternal()
     {
+        var layout = (LayoutEx*)Data->Layout;
         if (!AnyderService.SharedGroupLayoutFunctions.ReadyToStain(Data)) return false;
         
         ByteColor color;
@@ -112,22 +104,19 @@ public unsafe class Group : IDisposable
         
         Data->ApplyStain(&color);
         Data->ReapplyStain();
-        return true;
+
+        return layout->StainNeedsUpdating != 1;
     }
 
-    private void ApplyStainTask(IFramework framework)
+    private void ApplyStainTask()
     {
-        if (Data == null)
+        AnyderService.Log.Verbose($"Applying stain {Color} to {Path}");
+        if (Data == null || TrySetColorInternal())
         {
-            AnyderService.Framework.Update -= ApplyStainTask;
+            return;
         }
         
-        AnyderService.Log.Verbose($"Applying stain {Path}");
-        
-        if (TrySetColorInternal())
-        {
-            AnyderService.Framework.Update -= ApplyStainTask;
-        }
+        FrameworkQueue.Enqueue(ApplyStainTask);
     }
 
     public void SetWallpaper(ushort id)
@@ -176,7 +165,6 @@ public unsafe class Group : IDisposable
     public void Dispose()
     {
         AnyderService.Log.Verbose($"Disposing group {Path}");
-        AnyderService.Framework.Update -= ApplyStainTask;
         
         if (Data == null) return;
         

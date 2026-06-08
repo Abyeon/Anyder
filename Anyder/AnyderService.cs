@@ -21,6 +21,7 @@ public class AnyderService
     public static SharedGroupLayoutFunctions SharedGroupLayoutFunctions { get; private set; } = null!;
 
     public static ObjectManager ObjectManager { get; private set; } = null!;
+    public static FrameworkQueue FrameworkQueue { get; private set; } = null!;
 
     public static void Init(IDalamudPluginInterface pluginInterface)
     {
@@ -31,12 +32,14 @@ public class AnyderService
         VfxFunctions = new VfxFunctions();
         SharedGroupLayoutFunctions = new SharedGroupLayoutFunctions();
         
+        FrameworkQueue = new FrameworkQueue();
         ObjectManager = new ObjectManager();
     }
 
     public static void Dispose()
     {
         ObjectManager.Dispose();
+        FrameworkQueue.Dispose();
         VfxFunctions.Dispose();
     }
 }
