@@ -117,7 +117,7 @@ public unsafe class Group : IDisposable
         
         SetColor(color);
         
-        return layout->StainNeedsUpdating != 1;
+        return layout->ObjectNeedsUpdating != 1;
     }
 
     private void ApplyStainTask()
@@ -138,7 +138,14 @@ public unsafe class Group : IDisposable
     {
         if (Data->StainInfo == null) return;
 
-        AnyderService.SharedGroupLayoutFunctions.SetProperty(Data, id);
+        AnyderService.SharedGroupLayoutFunctions.ApplyProperty(Data,0, id);
+        // AnyderService.SharedGroupLayoutFunctions.UpdateStain(Data);
+        // var stainEx = (StainInfoEx*)Data->StainInfo;
+        // stainEx->Properties[0] = (ushort)(id | 0x8000);
+        // Data->StainInfo->Flags &= SharedGroupStainFlags.StainModified;
+        ((LayoutEx*)Data->Layout)->ObjectNeedsUpdating = 1;
+        // Data->ReapplyStain();
+        AnyderService.SharedGroupLayoutFunctions.UpdateRender(Data);
     }
 
     public void SetCollision(bool enabled)

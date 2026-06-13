@@ -18,8 +18,9 @@ public unsafe class SharedGroupLayoutFunctions
     internal delegate void FixGroupChildrenDelegate(SharedGroupLayoutInstance* self);
     internal delegate void AssignResourceHandlerDelegate(SharedGroupLayoutInstance* self, byte* pathBytes);
     internal delegate sbyte InitSgbDelegate(SharedGroupLayoutInstance* self, nint* initArgs, byte* pathBytes, byte a4);
-    internal delegate byte SetPropertyDelegate(SharedGroupLayoutInstance* self, uint a2, ushort id);
-    internal delegate byte ApplyPropertyDelegate(SharedGroupLayoutInstance* self, nint a2, ushort a3, ushort a4);
+    internal delegate bool UpdateRenderDelegate(SharedGroupLayoutInstance* self);
+    internal delegate byte ApplyPropertyDelegate(SharedGroupLayoutInstance* self, uint propertyIndex, ushort propertyId);
+    internal delegate byte UpdateStainDelegate(SharedGroupLayoutInstance* self, ulong a2, ushort a3, ushort a4);
     internal delegate bool ReadyToStainDelegate(SharedGroupLayoutInstance* self);
     internal delegate LayerManager* TryGetLayerDelegate(LayoutManager* layout, ushort key);
     internal delegate IntPtr UnknownLayerFunctionDelegate(LayerManager* creator, SharedGroupLayoutInstance* self);
@@ -43,12 +44,15 @@ public unsafe class SharedGroupLayoutFunctions
     
     [Signature("48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 41 56 41 57 48 83 EC ?? 48 8B B1 ?? ?? ?? ?? 45 0F B6 F9")]
     internal InitSgbDelegate? InitSgbInternal = null;
-    
-    [Signature("40 57 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 84 24 ?? ?? ?? ?? 4C 8B 89")]
-    internal SetPropertyDelegate? SetPropertyInternal = null;
 
-    [Signature("40 53 55 56 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 84 24 ?? ?? ?? ?? 4C 8B 91")]
+    [Signature("40 53 48 83 EC ?? ?? ?? ?? 48 8B D9 FF 90 ?? ?? ?? ?? 84 C0 74 ?? ?? ?? ?? 48 8B CB 48 83 C4 ?? 5B 48 FF A0 ?? ?? ?? ?? B0")]
+    internal UpdateRenderDelegate? UpdateRenderInternal = null;
+
+    [Signature("48 89 5C 24 ?? 55 56 57 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 84 24 ?? ?? ?? ?? 48 8B D9 41 0F B7 E8")]
     internal ApplyPropertyDelegate? ApplyPropertyInternal = null;
+    
+    [Signature("40 53 55 56 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 84 24 ?? ?? ?? ?? 4C 8B 91")]
+    internal UpdateStainDelegate? UpdateStainInternal = null;
 
     [Signature("40 56 48 83 EC ?? 8B 91 ?? ?? ?? ?? 48 8B F1 C1 E2 ?? C1 FA ?? 85 D2 74 ?? 83 EA ?? 74 ?? 83 EA ?? 74 ?? B0")]
     internal ReadyToStainDelegate? ReadyToStainInternal = null;
@@ -146,24 +150,31 @@ public unsafe class SharedGroupLayoutFunctions
         }
     }
 
-    public byte SetProperty(SharedGroupLayoutInstance* self, ushort id)
+    public bool UpdateRender(SharedGroupLayoutInstance* self)
     {
-        if (SetPropertyInternal == null)
-            throw new InvalidOperationException("SetWallpaper sig was not found!");
+        if (UpdateRenderInternal == null)
+            throw new InvalidOperationException("UpdateRender sig was not found!");
         
-        var ret = SetPropertyInternal(self, 0, id);
-        ApplyProperty(self);
-
-        //self->Layer
-        return ret;
+        return UpdateRenderInternal(self);
     }
 
-    public byte ApplyProperty(SharedGroupLayoutInstance* self)
+    public byte ApplyProperty(SharedGroupLayoutInstance* self, uint propertyIndex, ushort propertyId)
     {
         if (ApplyPropertyInternal == null)
             throw new InvalidOperationException("ApplyProperty sig was not found!");
+
+        var stainInfoEx = (StainInfoEx*)self->StainInfo;
+        if ((stainInfoEx->PropertyFlags & 0xF) - 5 > 2) return 0;
         
-        return ApplyPropertyInternal(self, 0, 0, 0);
+        return ApplyPropertyInternal(self, propertyIndex, propertyId);
+    }
+
+    public byte UpdateStain(SharedGroupLayoutInstance* self)
+    {
+        if (UpdateStainInternal == null)
+            throw new InvalidOperationException("UpdateRender sig was not found!");
+        
+        return UpdateStainInternal(self, 0, 0 ,0);
     }
 
     public bool ReadyToStain(SharedGroupLayoutInstance* self)
