@@ -86,7 +86,7 @@ public unsafe class Model : IDisposable
         
         if (Data->ModelResourceHandle->LoadState == 7)
         {
-            Data->UpdateRender();
+            Data->UpdateCulling();
             Dirty = false;
         }
     }
